@@ -1,0 +1,1 @@
+docker run --privileged=true --volume=/home/data/db/xe/fast_recovery_area:/u01/app/oracle/fast_recovery_area --volume=/home/data/db/xe/oradata:/u01/app/oracle/oradata --name xe --hostname xe --detach=true --publish=1521:1521 --publish=8080:8080 oracle-xe:11.2.0-1.0

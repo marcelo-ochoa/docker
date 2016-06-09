@@ -1,0 +1,25 @@
+version: '2'
+services:
+  master:
+    build: .
+    image: oracle-nosql/net
+    domainname: mycorp.com
+    networks:
+     - mycorp.com
+    ports:
+     - "5000:5000"
+     - "5001:5001"
+    environment:
+     - NODE_TYPE=m
+  slave:
+    build: .
+    image: oracle-nosql/net
+    domainname: mycorp.com
+    networks:
+     - mycorp.com
+    environment:
+     - NODE_TYPE=s
+networks:
+    mycorp.com:
+      external:
+        name: mycorp.com
