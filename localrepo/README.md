@@ -26,6 +26,6 @@ To start using your local repo simple call:
 ```bash
 mochoa@localhost:~/jdeveloper/mywork/docker/localrepo$  ./run-repo.sh 
 3801a62c652e990222dd6d8cab755e0d934130a2594ebc20c5c396cbcdc5fd37
-Local repo at: http://172.17.0.2:80/
-....
+Local repo is at: http://172.17.0.2:80/
+```
 
