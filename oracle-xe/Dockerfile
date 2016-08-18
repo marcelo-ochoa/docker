@@ -1,17 +1,21 @@
-FROM	oraclelinux:5
+FROM	oraclelinux:latest
 MAINTAINER marcelo.ochoa@gmail.com
+# Local repository IP address to find Oracle installable .zip file
+ARG REPO_IP
 
 RUN	groupadd -g 54321 oinstall
 RUN	groupadd -g 54322 dba
 RUN	useradd -m -g oinstall -G oinstall,dba -u 54321 oracle
-RUN	yum -y install bc glibc make binutils gcc libaio perl wget unzip && yum clean all
+RUN	yum -y install unzip libaio bc initscripts net-tools && \
+	yum clean all
 RUN	chown -R oracle:oinstall /home/oracle
 RUN	chmod g+rx /home/oracle
 RUN	chmod o+rx /home/oracle
 ADD	xe.rsp /home/oracle/
-ADD	oracle-xe-11.2.0-1.0.x86_64.rpm /home/oracle/
-RUN	rpm2cpio /home/oracle/oracle-xe-11.2.0-1.0.x86_64.rpm | cpio -idmv
-RUN	rm -f /home/oracle/oracle-xe-11.2.0-1.0.x86_64.rpm
+RUN	curl -sSL http://$REPO_IP/oracle-xe-11.2.0-1.0.x86_64.rpm.zip -o /home/oracle/oracle-xe-11.2.0-1.0.x86_64.rpm.zip && \
+	unzip /home/oracle/oracle-xe-11.2.0-1.0.x86_64.rpm.zip -d /home/oracle && \
+	rpm2cpio /home/oracle/Disk1/oracle-xe-11.2.0-1.0.x86_64.rpm | cpio -idmv && \
+	rm -rf /home/oracle/Disk1
 RUN	mkdir /u01/app/oracle/oradata
 RUN	mkdir /u01/app/oracle/product/11.2.0/xe/config/log
 RUN	mkdir -p /u01/app/oracle/diag/rdbms/xe/XE/trace/
