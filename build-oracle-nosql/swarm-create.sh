@@ -1,59 +1,78 @@
 #!/usr/bin/env bash
 
-set -e
+# set -e
 
-docker-machine create -d virtualbox proxy
+docker-machine create --driver virtualbox manager1
+docker-machine create --driver virtualbox manager2
+docker-machine create --driver virtualbox worker1
+docker-machine create --driver virtualbox worker2
+docker-machine stop $(docker-machine ls -q)
 
-export DOCKER_IP=$(docker-machine ip proxy)
+VBoxManage modifyvm "manager1" --natdnshostresolver1 on --memory 8192
+VBoxManage modifyvm "manager2" --natdnshostresolver1 on --memory 8192
+VBoxManage modifyvm "worker1" --natdnshostresolver1 on --memory 8192
+VBoxManage modifyvm "worker2" --natdnshostresolver1 on --memory 8192
 
-export CONSUL_IP=$(docker-machine ip proxy)
+# Build Docker Swarm cluster
+docker-machine start manager1
+export MANAGER1_IP=$(docker-machine ip manager1)
+docker-machine ssh manager1 docker swarm init --advertise-addr eth1
+export MGR_TOKEN=$(docker-machine ssh manager1 docker swarm join-token manager -q)
+export WRK_TOKEN=$(docker-machine ssh manager1 docker swarm join-token worker -q)
 
-eval $(docker-machine env proxy)
 
-docker-compose -f docker-compose-registrator.yml up -d consul proxy
+docker-machine start manager2
+docker-machine ssh manager2 \
+docker swarm join \
+--token $MGR_TOKEN \
+$MANAGER1_IP:2377
 
-docker-machine create -d virtualbox \
-    --swarm --swarm-master \
-    --swarm-discovery="consul://$CONSUL_IP:8500" \
-    --engine-opt="cluster-store=consul://$CONSUL_IP:8500" \
-    --engine-opt="cluster-advertise=eth1:2376" \
-    swarm-master
+docker-machine start worker1
+docker-machine ssh worker1 \
+docker swarm join \
+--token $WRK_TOKEN \
+$MANAGER1_IP:2377
 
-docker-machine create -d virtualbox \
-    --swarm \
-    --swarm-discovery="consul://$CONSUL_IP:8500" \
-    --engine-opt="cluster-store=consul://$CONSUL_IP:8500" \
-    --engine-opt="cluster-advertise=eth1:2376" \
-    swarm-node-1
+docker-machine start worker2
+docker-machine ssh worker2 \
+docker swarm join \
+--token $WRK_TOKEN \
+$MANAGER1_IP:2377
 
-docker-machine create -d virtualbox \
-    --swarm \
-    --swarm-discovery="consul://$CONSUL_IP:8500" \
-    --engine-opt="cluster-store=consul://$CONSUL_IP:8500" \
-    --engine-opt="cluster-advertise=eth1:2376" \
-    swarm-node-2
+# Provisioning image
+eval $(docker-machine env manager1)
+docker build -t "oracle-nosql/net" .
 
-eval $(docker-machine env swarm-master)
+eval $(docker-machine env manager2)
+docker build -t "oracle-nosql/net" .
 
-export DOCKER_IP=$(docker-machine ip swarm-master)
+eval $(docker-machine env worker1)
+docker build -t "oracle-nosql/net" .
 
-docker-compose -f docker-compose-registrator.yml up -d registrator
+eval $(docker-machine env worker2)
+docker build -t "oracle-nosql/net" .
 
-eval $(docker-machine env swarm-node-1)
+# Define network between nodes
+eval $(docker-machine env manager1)
 
-export DOCKER_IP=$(docker-machine ip swarm-node-1)
+docker network create -d overlay nosql_cluster
 
-docker-compose -f docker-compose-registrator.yml up -d registrator
+# Define services
+docker service create \
+  --network nosql_cluster \
+  --name nosql_master \
+  --env NODE_TYPE=m \
+  -p 5000:5000 \
+  -p 5001:5001 \
+  oracle-nosql/net
 
-eval $(docker-machine env swarm-node-2)
+export MASTER_NODE_NAME=$(docker service ps nosql_master|grep nosql_master.1|grep Running|awk '{print $2"."$1}')
 
-export DOCKER_IP=$(docker-machine ip swarm-node-2)
+docker service create \
+  --network nosql_cluster \
+  --name nosql_slave \
+  --replicas 2 \
+  --env NODE_TYPE=s \
+  --env MASTER_NODE_NAME=$MASTER_NODE_NAME \
+  oracle-nosql/net
 
-docker-compose -f docker-compose-registrator.yml up -d registrator
-
-eval $(docker-machine env swarm-master)
-
-export DOCKER_IP=$(docker-machine ip swarm-master)
-docker network create mycorp.com
-docker-compose -p nosql -f docker-compose.yml up -d
-docker-compose -p nosql -f docker-compose.yml scale slave=3
