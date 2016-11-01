@@ -1,35 +1,21 @@
 #!/bin/bash
-set -e
-docker-machine start proxy
+docker-machine start manager1
+docker-machine start manager2
+docker-machine start worker1
+docker-machine start worker2
+eval $(docker-machine env manager1)
 
-export CONSUL_IP=$(docker-machine ip proxy)
-export PROXY_IP=$(docker-machine ip proxy)
-eval $(docker-machine env proxy)
-export DOCKER_IP=$(docker-machine ip proxy)
+docker service create --network nosql_cluster --name master --replicas=1 -p 5001:5001 --env NODE_TYPE=m oracle-nosql/net
 
-docker-compose -f docker-compose-registrator.yml up -d consul proxy
-docker-machine start swarm-master
-docker-machine start swarm-node-1
-docker-machine start swarm-node-2
-eval $(docker-machine env swarm-master)
+export MASTER_NODE_HOST=$(docker service ps master|grep master.1|grep Running|awk '{print $4}')
+export MASTER_NODE_NAME=$(docker service ps master|grep master.1|grep Running|awk '{print $2"."$1}')
+export MASTER_IP=$(docker-machine ssh $MASTER_NODE_HOST docker inspect --format='{{.NetworkSettings.Networks.nosql_cluster.IPAddress}}' $MASTER_NODE_NAME)
 
-export DOCKER_IP=$(docker-machine ip swarm-master)
 
-docker-compose -f docker-compose-registrator.yml up -d registrator
+sleep 60
 
-eval $(docker-machine env swarm-node-1)
+docker service create --network nosql_cluster --name slave --replicas=1 --env NODE_TYPE=s --env MASTER_NODE=$MASTER_IP oracle-nosql/net
 
-export DOCKER_IP=$(docker-machine ip swarm-node-1)
+sleep 60
 
-docker-compose -f docker-compose-registrator.yml up -d registrator
-
-eval $(docker-machine env swarm-node-2)
-
-export DOCKER_IP=$(docker-machine ip swarm-node-2)
-
-docker-compose -f docker-compose-registrator.yml up -d registrator
-
-export DOCKER_IP=$(docker-machine ip swarm-master)
-eval $(docker-machine env --swarm swarm-master)
-
-docker-compose -p nosql -f docker-compose.yml up -d
+docker service scale slave=2
