@@ -1,17 +1,20 @@
-Download linuxamd64_12102_database_1of2.zip and linuxamd64_12102_database_2of2.zip at
- (http://www.oracle.com/technetwork/database/enterprise-edition/downloads/index.html)  
-Copy both files into this folder.
-Initial sys/system password are defined into manage-oracle.sh file.  
-All oracle related parameters are defined into db_install.dbt file.  
-Build oracle-rdbms Docker image using buildDockerImage.sh script.
-Before run.sh create and change permissions to 54321 using:
+Download latest Apex distribution for example Oracle Application Express 5.0.4 - English language (http://download.oracle.com/otn/java/appexpress/apex_5.0.4_en.zip)
+ (http://www.oracle.com/technetwork/developer-tools/apex/downloads/index.html)  
+Copy apex_5.0.4_en.zip into this folder.
+Initial sys/system password are defined at the first Docker start.  
+Build your Oracle Official 11gXE image first using this template (https://github.com/oracle/docker-images/tree/master/OracleDatabase)  
+Check first if is available, for example:  
 ```bash
-  sudo mkdir -p /home/data/db/ols
-  sudo cp db_install.dbt /home/data/db/ols
-  sudo mkdir -p chown -R 54321:54321 /home/data/db/ols
+[mochoa@localhost xe-apex-latest]$ docker images|grep "oracle/database"
+oracle/database                                        11.2.0.2-xe              ba74688a297e        22 hours ago        1.206 GB
+oracle/database                                        12.1.0.2-ee              af209128066e        5 days ago          11.72 GB
 ```
-With empty directories first execution will create a default database with password defined into manage-oracle.sh file.  
-Next executions have RDBMS with the point in time information of ./stop.sh execution.  
-To stop and remove ephemeral data such as logs and .trc files use ./stop.sh script.  
-To logging in a running database VM use ./attch.sh script.  
-To see log information during boot use ./log.sh script.  
+Build oracle-apex Docker image using buildDockerImage.sh script.
+Before run-apex.sh create a directory and change permissions to 1000 using:
+```bash
+  sudo mkdir -p /home/data/db/apex
+  sudo chown -R 1000:1000 /home/data/db/ols
+```
+With empty directories first execution will create a default database with password random generated.  
+Log into Apex using http://localhost:8080/apex/apex_admin using "admin" default user and the above password (sys/system).  
+And happy coding with latest Apex.
