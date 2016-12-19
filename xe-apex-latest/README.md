@@ -13,7 +13,7 @@ Build oracle-apex Docker image using buildDockerImage.sh script.
 Before run-apex.sh create a directory and change permissions to 1000 using:
 ```bash
   sudo mkdir -p /home/data/db/apex
-  sudo chown -R 1000:1000 /home/data/db/ols
+  sudo chown -R 1000:1000 /home/data/db/apex
 ```
 With empty directories first execution will create a default database with password random generated.  
 Log into Apex using http://localhost:8080/apex/apex_admin using "admin" default user and the above password (sys/system).  
