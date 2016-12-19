@@ -65,8 +65,8 @@ function installOLS() {
       export ORACLE_PWD=oracle
    fi;
 
-   cd ols;ant -Ddba.usr=sys -Ddba.pwd=$ORACLE_PWD -Ddb.str=$ORACLE_PDB install-ols
-   echo "OLS installed"
+   cd ols;ant -Ddba.usr=sys -Ddba.pwd=$ORACLE_PWD -Ddb.str=$ORACLE_PDB install-ols >/home/oracle/install-OLS.log 2>/home/oracle/install-OLS.err
+   echo "OLS installed see /home/oracle/install-OLS.log and /home/oracle/install-OLS.err files for details"
 }
 
 
@@ -74,7 +74,7 @@ function installOLS() {
 function createDB {
 
    # Auto generate ORACLE PWD
-   ORACLE_PWD=`openssl rand -base64 8`
+   ORACLE_PWD="`openssl rand -base64 8`1"
    echo "ORACLE AUTO GENERATED PASSWORD FOR SYS, SYSTEM AND PDBAMIN: $ORACLE_PWD";
 
    cp $ORACLE_BASE/$CONFIG_RSP $ORACLE_BASE/dbca.rsp
@@ -179,6 +179,7 @@ fi;
 
 echo "#########################"
 echo "DATABASE IS READY TO USE!"
+echo "ORACLE AUTO GENERATED PASSWORD FOR SYS, SYSTEM AND PDBAMIN: $ORACLE_PWD";
 echo "#########################"
 
 tail -f $ORACLE_BASE/diag/rdbms/*/*/trace/alert*.log &
