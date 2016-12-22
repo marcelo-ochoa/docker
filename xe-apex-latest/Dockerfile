@@ -1,7 +1,7 @@
 FROM	oracle/database:11.2.0.2-xe
 MAINTAINER mochoa@scotas.com
 
-ENV APEX_FILE=apex_5.0.4_en.zip
+ENV APEX_FILE=apex_5.1_en.zip
 
 COPY $APEX_FILE $INSTALL_DIR/
 

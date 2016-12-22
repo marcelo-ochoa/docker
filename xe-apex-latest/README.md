@@ -1,6 +1,6 @@
-Download latest Apex distribution for example Oracle Application Express 5.0.4 - English language (http://download.oracle.com/otn/java/appexpress/apex_5.0.4_en.zip)
+Download latest Apex distribution for example Oracle Application Express 5.1 - English language (http://download.oracle.com/otn/java/appexpress/apex_5.1_en.zip)
  (http://www.oracle.com/technetwork/developer-tools/apex/downloads/index.html)  
-Copy apex_5.0.4_en.zip into this folder.
+Copy apex_5.1_en.zip into this folder.
 Initial sys/system password are defined at the first Docker start.  
 Build your Oracle Official 11gXE image first using this template (https://github.com/oracle/docker-images/tree/master/OracleDatabase)  
 Check first if is available, for example:  
