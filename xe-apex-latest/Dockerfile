@@ -5,7 +5,7 @@ ENV APEX_FILE=apex_5.1_en.zip
 
 COPY $APEX_FILE $INSTALL_DIR/
 
-RUN cd $INSTALL_DIR  && \
+RUN cd $INSTALL_DIR/ && \
     unzip $APEX_FILE && \
     rm $APEX_FILE && \
     chmod u+x $ORACLE_BASE/$RUN_FILE
