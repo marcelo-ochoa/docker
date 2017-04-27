@@ -1,5 +1,5 @@
 #!/bin/bash
-# Sample call  sh ./deploy-swarm.sh oc5
+# Sample call  sh ./deploy-swarm.sh node5
 
 set -e
 echo ""

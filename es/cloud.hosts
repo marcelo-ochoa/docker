@@ -1,5 +1,5 @@
-oc1	129.144.12.125	es_ingest
-oc2	129.144.12.234	es_data
-oc3	129.144.12.229	es_data
-oc4	129.144.12.74	es_master
-oc5	129.144.12.140	es_master
+node1	129.157.161.190	es_ingest	oc3
+node2	129.157.161.103	es_data		oc3
+node3	129.157.232.124	es_data		oc3
+node4	129.157.232.209	es_master	oc3
+node5	129.157.232.205	es_master	oc4

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Sample call  sh ./deploy-cluster.sh oc5
+# Sample call  sh ./deploy-cluster.sh node5
 # Provisioning image with a modified config/elasticsearch.yml
 echo ""
 echo "----------------------------"
@@ -39,7 +39,7 @@ echo ""
 echo "---------------------------------------"
 echo "Running Swarm visualizer at oc5 node..."
 echo "---------------------------------------"
-# internal IP 192.168.0.3
+# internal IP 192.168.0.2
 docker run -d \
    --name viz \
    -p 8080:8080 \
@@ -52,7 +52,7 @@ echo "Running Cerebro to visualize ES cluster at oc5 node..."
 echo "------------------------------------------------------"
 # internal IP 192.168.0.4
 docker run -d  \
-  -p 9000:9000 \
+  -p 8000:9000 \
   --net es_cluster \
   --env JAVA_OPTS="-Djava.net.preferIPv4Stack=true" \
   --name cerebro yannart/cerebro:latest
@@ -62,13 +62,15 @@ echo "--------------------------------"
 echo "Deploying ES cluster to Swarm..."
 echo "--------------------------------"
 # internal IP 192.168.0.5
-docker service create --network es_cluster --name es_master --constraint 'node.labels.type == es_master' --replicas=1 --publish 9200:9200/tcp --env ES_JAVA_OPTS="-Xms1g -Xmx1g"  elasticsearch/swarm:5.0.0 -E cluster.name="ESCookBook" -E node.master=true -E node.data=false -E discovery.zen.ping.unicast.hosts=192.168.0.5
+docker service create --network es_cluster --name es_master --constraint 'node.labels.type == es_master' --health-cmd="curl --silent --fail es_master:9200/_cluster/health || exit 1" --health-interval=5s --health-retries=12 --health-timeout=2s --replicas=1 --publish 9200:9200/tcp --env ES_JAVA_OPTS="-Xms1g -Xmx1g" elasticsearch/swarm:5.0.0 -E cluster.name="ESCookBook" -E node.master=true -E node.data=false -E discovery.zen.ping.unicast.hosts=192.168.0.5
 # Wait for master node up and running
 sleep 60
 
 docker service create --network es_cluster --name es_data --constraint 'node.labels.type == es_data' --replicas=2 --env ES_JAVA_OPTS="-Xms1g -Xmx1g" elasticsearch/swarm:5.0.0 -E cluster.name="ESCookBook" -E node.master=false -E node.data=true -E discovery.zen.ping.unicast.hosts=es_master
 
 docker service create --network es_cluster --name es_ingest --constraint 'node.labels.type == es_ingest' --replicas=1 --env ES_JAVA_OPTS="-Xms1g -Xmx1g" elasticsearch/swarm:5.0.0 -E cluster.name="ESCookBook" -E node.master=false -E node.data=false -E node.ingest=true -E discovery.zen.ping.unicast.hosts=es_master
+
+docker service create --name portainer --publish 9000:9000 --constraint 'node.role == manager' --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock
 
 docker service ls
 echo ""

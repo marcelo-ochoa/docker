@@ -9,6 +9,7 @@ echo "----------------------------"
 PRIV_SSH_KEY=$1
 
 for i in $(awk '{print $1}' cloud.hosts); do
+  echo "";
   echo "Deploying $i node with docker software ...";
   IP_ADDR=$(grep $i cloud.hosts|awk '{print $2}');
   ssh-keygen -f ~/.ssh/known_hosts -R $IP_ADDR;
@@ -19,6 +20,6 @@ done;
 
 echo ""
 echo "------------------------------"
-echo "Wait until reboot all nodes..."
+echo "Wait until reboot last node..."
 echo "------------------------------"
 
