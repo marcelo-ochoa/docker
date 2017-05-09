@@ -62,7 +62,7 @@ echo "--------------------------------"
 echo "Deploying ES cluster to Swarm..."
 echo "--------------------------------"
 # internal IP 192.168.0.5
-docker service create --network es_cluster --name es_master --constraint 'node.labels.type == es_master' --health-cmd="curl --silent --fail es_master:9200/_cluster/health || exit 1" --health-interval=5s --health-retries=12 --health-timeout=2s --replicas=1 --publish 9200:9200/tcp --env ES_JAVA_OPTS="-Xms1g -Xmx1g" elasticsearch/swarm:5.0.0 -E cluster.name="ESCookBook" -E node.master=true -E node.data=false -E discovery.zen.ping.unicast.hosts=192.168.0.5
+docker service create --network es_cluster --name es_master --constraint 'node.labels.type == es_master' --replicas=1 --publish 9200:9200/tcp --env ES_JAVA_OPTS="-Xms1g -Xmx1g" elasticsearch/swarm:5.0.0 -E cluster.name="ESCookBook" -E node.master=true -E node.data=false -E discovery.zen.ping.unicast.hosts=192.168.0.5
 # Wait for master node up and running
 sleep 60
 
@@ -70,7 +70,11 @@ docker service create --network es_cluster --name es_data --constraint 'node.lab
 
 docker service create --network es_cluster --name es_ingest --constraint 'node.labels.type == es_ingest' --replicas=1 --env ES_JAVA_OPTS="-Xms1g -Xmx1g" elasticsearch/swarm:5.0.0 -E cluster.name="ESCookBook" -E node.master=false -E node.data=false -E node.ingest=true -E discovery.zen.ping.unicast.hosts=es_master
 
-docker service create --name portainer --publish 9000:9000 --constraint 'node.role == manager' --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock
+echo ""
+echo "--------------------------------------------------------"
+echo "Running Portainer to manage Swarm cluster at oc5 node..."
+echo "--------------------------------------------------------"
+docker run -d --name portainer -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock
 
 docker service ls
 echo ""
