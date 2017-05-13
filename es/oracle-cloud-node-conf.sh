@@ -18,6 +18,6 @@ add-apt-repository \
        ubuntu-$(lsb_release -cs) \
        main"
 apt-get update
-apt-get -y install docker-engine
+apt-get -y install docker-engine nfs-common
 usermod -G docker -a ubuntu
 
