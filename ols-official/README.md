@@ -9,15 +9,17 @@ This project offers sample Dockerfiles for:
 
 To assist in building the images, you can use the [buildDockerImage.sh](buildDockerImage.sh) script. See below for instructions and usage.
 
-The `buildDockerImage.sh` script is just a utility shell script that performs an easy way for beginners to get started. Expert users are welcome to dir
-ectly call `docker build` with their prefered set of parameters.
+The `buildDockerImage.sh` script is just a utility shell script that performs an easy way for beginners to get started. Expert users are welcome to
+directly call `docker build` with their prefered set of parameters.
 
 ### Building Scotas OLS Docker Install Images
 **IMPORTANT:** You will have to provide the Oracle Database base image at your local repository.
 See this [README.md](https://github.com/oracle/docker-images/blob/master/OracleDatabase/README.md) file for more instructions.
 
 Before you build the image make sure that you have a oracle/database:12.1.0.2-ee ready for example:
-     [mochoa@pocho ols-official]$ docker image ls|grep oracle
+
+
+     [mochoa@localhost ols-official]$ docker image ls|grep oracle
      ....
      oracle/database                                       12.1.0.2-ee              342cc4c79645        22 hours ago        11.2 GB
      ....
@@ -36,7 +38,7 @@ the following lines highlight when the database is ready to be used:
 ### Running Scotas OLS in a Docker container
 
 #### Running Scotas OLS on top of Oracle Enterprise Edition in a Docker container
-To run your Oracle Database Docker image use the **docker run** command as follows:
+To run your Scotas OLS Docker image use the **docker run** command as follows:
 
 	docker run --name <container name> \
 	-p <host port>:1521 -p <host port>:5500 \
@@ -51,7 +53,7 @@ To run your Oracle Database Docker image use the **docker run** command as follo
 	   --name:        The name of the container (default: auto generated)
 	   -p:            The port mapping of the host port to the container port. 
 	                  Two ports are exposed: 1521 (Oracle Listener), 5500 (OEM Express)
-                          Option 9099 if you want to control Solr logging level
+                          Optional 9099 if you want to control Solr logging level
 	   -e ORACLE_SID: The Oracle Database SID that should be used, required parameter
 	   -e ORACLE_PDB: The Oracle Database PDB name that should be used, required parameter
 	   -e ORACLE_PWD: The Oracle Database SYS, SYSTEM and PDB_ADMIN password, required parameter
@@ -66,6 +68,7 @@ There are two ports that are exposed in this image:
 * 5500 which is the port of OEM Express.
 
 The password for SYS/SYSTEM and PDB_ADMIN accounts can be changed via the **docker exec** command. **Note**, the container has to be running:
+
 	docker exec test su - oracle -c "/opt/oracle/setPassword.sh <your password>"
 
 Once the container has been started you can connect to it just like to any other database:
@@ -90,7 +93,7 @@ Another option is to use `docker exec` and run `sqlplus` from within the same co
 using `btrfs` or `overlay2` instead. For more details see issue [#317](https://github.com/oracle/docker-images/issues/317).
 * Unlike Oracle Docker images Scotas OLS installer do not work with random generated password, ORACLE_PWD must be passed in first run of the container
 when the Database is created and OLS is installed
-* Unlike Oracle Docker images this container run as root at the entry point for starting the Database, these fix:
+* Unlike Oracle Docker images this container run as root at the entry point for starting the Database, this fixs:
   - ORA-04035: unable to allocate 4096 bytes of shared memory in shared object cache "JOXSHM" of size "1073741824"
   - ORA-27106: system pages not available to allocate memory
 
