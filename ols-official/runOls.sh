@@ -1,14 +1,32 @@
 #!/bin/bash
+# LICENSE CDDL 1.0 + GPL 2.0
+#
+# Copyright (c) 1982-2016 Oracle and/or its affiliates. All rights reserved.
+# 
+# Since: November, 2016
+# Author: gerald.venzl@oracle.com
+# Description: Runs the Oracle Database inside the container
+# 
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+# 
+export ORACLE_SID=$1
+export ORACLE_PDB=$2
+export ORACLE_PWD=$3
+export ORACLE_CHARACTERSET=$4
 
 ########### Move DB files ############
 function moveFiles {
+
    if [ ! -d $ORACLE_BASE/oradata/dbconfig/$ORACLE_SID ]; then
       mkdir -p $ORACLE_BASE/oradata/dbconfig/$ORACLE_SID/
    fi;
-   
+
    mv $ORACLE_HOME/dbs/spfile$ORACLE_SID.ora $ORACLE_BASE/oradata/dbconfig/$ORACLE_SID/
    mv $ORACLE_HOME/dbs/orapw$ORACLE_SID $ORACLE_BASE/oradata/dbconfig/$ORACLE_SID/
    mv $ORACLE_HOME/network/admin/tnsnames.ora $ORACLE_BASE/oradata/dbconfig/$ORACLE_SID/
+
+   # oracle user does not have permissions in /etc, hence cp and not mv
+   cp /etc/oratab $ORACLE_BASE/oradata/dbconfig/$ORACLE_SID/
    
    symLinkFiles;
 }
@@ -27,6 +45,21 @@ function symLinkFiles {
    if [ ! -L $ORACLE_HOME/network/admin/tnsnames.ora ]; then
       ln -s $ORACLE_BASE/oradata/dbconfig/$ORACLE_SID/tnsnames.ora $ORACLE_HOME/network/admin/tnsnames.ora
    fi;
+
+   # oracle user does not have permissions in /etc, hence cp and not ln 
+   cp $ORACLE_BASE/oradata/dbconfig/$ORACLE_SID/oratab /etc/oratab
+
+}
+
+########### SIGINT handler ############
+function _int() {
+   echo "Stopping container."
+   echo "SIGINT received, shutting down database!"
+   sqlplus / as sysdba <<EOF
+   shutdown immediate;
+   exit;
+EOF
+   lsnrctl stop
 }
 
 ########### SIGTERM handler ############
@@ -35,6 +68,7 @@ function _term() {
    echo "SIGTERM received, shutting down database!"
    sqlplus / as sysdba <<EOF
    shutdown immediate;
+   exit;
 EOF
    lsnrctl stop
 }
@@ -44,101 +78,31 @@ function _kill() {
    echo "SIGKILL received, shutting down database!"
    sqlplus / as sysdba <<EOF
    shutdown abort;
+   exit;
 EOF
    lsnrctl stop
 }
 
-########### Patch ODCI ############
-function patchODCI() {
-   echo "Patching ODCI library..."
-   mv $ORACLE_HOME/rdbms/jlib/ODCI.jar $ORACLE_HOME/rdbms/jlib/ODCI.jar.orig
-   cp /home/oracle/ODCI.jar $ORACLE_HOME/rdbms/jlib/ODCI.jar
-   $ORACLE_HOME/perl/bin/perl $ORACLE_HOME/rdbms/admin/catcon.pl -d $ORACLE_HOME/rdbms/admin -b initsoxx_output initsoxx.sql
-   echo "ODCI patched"
-}
-
-########### Install OLS ############
-function installOLS() {
-   echo "Installing OLS..."
-   # Default for ORACLE PWD
-   if [ "$ORACLE_PWD" == "" ]; then
-      export ORACLE_PWD=oracle
-   fi;
-
-   cd ols;ant -Ddba.usr=sys -Ddba.pwd=$ORACLE_PWD -Ddb.str=$ORACLE_PDB install-ols >/home/oracle/install-OLS.log 2>/home/oracle/install-OLS.err
-   echo "OLS installed see /home/oracle/install-OLS.log and /home/oracle/install-OLS.err files for details"
-}
-
-
-############# Create DB ################
-function createDB {
-
-   # Auto generate ORACLE PWD
-   ORACLE_PWD="`openssl rand -base64 8`1"
-   echo "ORACLE AUTO GENERATED PASSWORD FOR SYS, SYSTEM AND PDBAMIN: $ORACLE_PWD";
-
-   cp $ORACLE_BASE/$CONFIG_RSP $ORACLE_BASE/dbca.rsp
-
-   sed -i -e "s|###ORACLE_SID###|$ORACLE_SID|g" $ORACLE_BASE/dbca.rsp
-   sed -i -e "s|###ORACLE_PDB###|$ORACLE_PDB|g" $ORACLE_BASE/dbca.rsp
-   sed -i -e "s|###ORACLE_PWD###|$ORACLE_PWD|g" $ORACLE_BASE/dbca.rsp
-
-   mkdir -p $ORACLE_HOME/network/admin
-   echo "NAME.DIRECTORY_PATH= {TNSNAMES, EZCONNECT, HOSTNAME}" > $ORACLE_HOME/network/admin/sqlnet.ora
-
-   # Listener.ora
-   echo "LISTENER = 
-  (DESCRIPTION_LIST = 
-    (DESCRIPTION = 
-      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1)) 
-      (ADDRESS = (PROTOCOL = TCP)(HOST = 0.0.0.0)(PORT = 1521)) 
-    ) 
-  ) 
-
-" > $ORACLE_HOME/network/admin/listener.ora
-
-# Start LISTENER and run DBCA
-   lsnrctl start &&
-   dbca -silent -responseFile $ORACLE_BASE/dbca.rsp ||
-    cat /opt/oracle/cfgtoollogs/dbca/$ORACLE_SID/$ORACLE_SID.log
-
-   echo "$ORACLE_SID=localhost:1521/$ORACLE_SID" >> $ORACLE_HOME/network/admin/tnsnames.ora
-   echo "$ORACLE_PDB= 
-  (DESCRIPTION = 
-    (ADDRESS = (PROTOCOL = TCP)(HOST = 0.0.0.0)(PORT = 1521))
-    (CONNECT_DATA =
-      (SERVER = DEDICATED)
-      (SERVICE_NAME = $ORACLE_PDB)
-    )
-  )" >> $ORACLE_HOME/network/admin/tnsnames.ora
-
-   sqlplus / as sysdba << EOF
-      ALTER SYSTEM SET control_files='$ORACLE_BASE/oradata/$ORACLE_SID/control01.ctl' scope=spfile;
-      ALTER PLUGGABLE DATABASE $ORACLE_PDB SAVE STATE;
-EOF
-
-  rm $ORACLE_BASE/dbca.rsp
-  
-  # Move database operational files to oradata
-  moveFiles;
-
-}
-
-############# Start DB ################
-function startDB {
-   # Make sure audit file destination exists
-   if [ ! -d $ORACLE_BASE/admin/$ORACLE_SID/adump ]; then
-      mkdir -p $ORACLE_BASE/admin/$ORACLE_SID/adump
-   fi;
-   
-   lsnrctl start
-   sqlplus / as sysdba << EOF
-      STARTUP;
-EOF
-
-}
-
+###################################
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
 ############# MAIN ################
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
+###################################
+
+# Check whether container has enough memory
+# Github issue #219: Prevent integer overflow,
+# only check if memory digits are less than 11 (single GB range and below) 
+if [ `cat /sys/fs/cgroup/memory/memory.limit_in_bytes | wc -c` -lt 11 ]; then
+   if [ `cat /sys/fs/cgroup/memory/memory.limit_in_bytes` -lt 2147483648 ]; then
+      echo "Error: The container doesn't have enough memory allocated."
+      echo "A database container needs at least 2 GB of memory."
+      echo "You currently only have $((`cat /sys/fs/cgroup/memory/memory.limit_in_bytes`/1024/1024/1024)) GB allocated to the container."
+      exit 1;
+   fi;
+fi;
+
+# Set SIGINT handler
+trap _int SIGINT
 
 # Set SIGTERM handler
 trap _term SIGTERM
@@ -149,39 +113,77 @@ trap _kill SIGKILL
 # Default for ORACLE SID
 if [ "$ORACLE_SID" == "" ]; then
    export ORACLE_SID=ORCLCDB
+else
+  # Check whether SID is no longer than 12 bytes
+  # Github issue #246: Cannot start OracleDB image
+  if [ "${#ORACLE_SID}" -gt 12 ]; then
+     echo "Error: The ORACLE_SID must only be up to 12 characters long."
+     exit 1;
+  fi;
+  
+  # Check whether SID is alphanumeric
+  # Github issue #246: Cannot start OracleDB image
+  if [[ "$ORACLE_SID" =~ [^a-zA-Z0-9] ]]; then
+     echo "Error: The ORACLE_SID must be alphanumeric."
+     exit 1;
+   fi;
 fi;
 
 # Default for ORACLE PDB
-if [ "$ORACLE_PDB" == "" ]; then
-   export ORACLE_PDB=ORCLPDB1
-fi;
+export ORACLE_PDB=${ORACLE_PDB:-ORCLPDB1}
+
+# Default for ORACLE CHARACTERSET
+export ORACLE_CHARACTERSET=${ORACLE_CHARACTERSET:-AL32UTF8}
 
 # Check whether database already exists
 if [ -d $ORACLE_BASE/oradata/$ORACLE_SID ]; then
    symLinkFiles;
-   startDB;
-   if [ ! -f $ORACLE_BASE/oradata/$ORACLE_SID/OLS_IS_INSTALLED ]; then
-      patchODCI;
-      installOLS;
-      touch $ORACLE_BASE/oradata/$ORACLE_SID/OLS_IS_INSTALLED
-   fi
+   
+   # Make sure audit file destination exists
+   if [ ! -d $ORACLE_BASE/admin/$ORACLE_SID/adump ]; then
+      mkdir -p $ORACLE_BASE/admin/$ORACLE_SID/adump
+   fi;
+   
+   # Start database
+   $ORACLE_BASE/$START_FILE;
+   
 else
    # Remove database config files, if they exist
    rm -f $ORACLE_HOME/dbs/spfile$ORACLE_SID.ora
    rm -f $ORACLE_HOME/dbs/orapw$ORACLE_SID
    rm -f $ORACLE_HOME/network/admin/tnsnames.ora
    
-   createDB;
-   patchODCI;
-   installOLS;
-   touch $ORACLE_BASE/oradata/$ORACLE_SID/OLS_IS_INSTALLED
+   # Create database
+   $ORACLE_BASE/$CREATE_DB_FILE $ORACLE_SID $ORACLE_PDB $ORACLE_PWD;
+
+   # set env
+   echo "export ORACLE_SID=$ORACLE_SID" >>/home/oracle/.bashrc
+   echo "export ORACLE_PDB=$ORACLE_PDB" >>/home/oracle/.bashrc
+   # Install OLS
+   $ORACLE_BASE/installOls.sh $ORACLE_SID $ORACLE_PDB $ORACLE_PWD;
+   
+   # Move database operational files to oradata
+   moveFiles;
+
 fi;
 
-echo "#########################"
-echo "DATABASE IS READY TO USE!"
-echo "ORACLE AUTO GENERATED PASSWORD FOR SYS, SYSTEM AND PDBAMIN: $ORACLE_PWD";
-echo "#########################"
+# Check whether database is up and running
+$ORACLE_BASE/$CHECK_DB_FILE
+if [ $? -eq 0 ]; then
+   echo "#########################"
+   echo "DATABASE IS READY TO USE!"
+   echo "#########################"
+else
+   echo "#####################################"
+   echo "########### E R R O R ###############"
+   echo "DATABASE SETUP WAS NOT SUCCESSFUL!"
+   echo "Please check output for further info!"
+   echo "########### E R R O R ###############" 
+   echo "#####################################"
+fi;
 
+# Tail on alert log and wait (otherwise container will exit)
+echo "The following output is now a tail of the alert.log:"
 tail -f $ORACLE_BASE/diag/rdbms/*/*/trace/alert*.log &
 childPID=$!
 wait $childPID

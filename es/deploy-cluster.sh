@@ -36,9 +36,9 @@ docker network create -d overlay \
 	--subnet=192.168.0.0/24 \
 	es_cluster
 echo ""
-echo "---------------------------------------"
-echo "Running Swarm visualizer at oc5 node..."
-echo "---------------------------------------"
+echo "--------------------------------------------------"
+echo "Running Swarm visualizer at $SWARM_MANAGER node..."
+echo "--------------------------------------------------"
 # internal IP 192.168.0.2
 docker run -d \
    --name viz \
@@ -47,10 +47,10 @@ docker run -d \
    -v /var/run/docker.sock:/var/run/docker.sock manomarks/visualizer:latest
 
 echo ""
-echo "------------------------------------------------------"
-echo "Running Cerebro to visualize ES cluster at oc5 node..."
-echo "------------------------------------------------------"
-# internal IP 192.168.0.4
+echo "-----------------------------------------------------------------"
+echo "Running Cerebro to visualize ES cluster at $SWARM_MANAGER node..."
+echo "-----------------------------------------------------------------"
+# internal IP 192.168.0.3
 docker run -d  \
   -p 8000:9000 \
   --net es_cluster \
@@ -61,7 +61,7 @@ echo ""
 echo "--------------------------------"
 echo "Deploying ES cluster to Swarm..."
 echo "--------------------------------"
-# internal IP 192.168.0.5
+# internal IP 192.168.0.5,  es_master=192.168.0.4
 docker service create --network es_cluster --name es_master --constraint 'node.labels.type == es_master' --replicas=1 --publish 9200:9200/tcp --env ES_JAVA_OPTS="-Xms1g -Xmx1g" elasticsearch/swarm:5.0.0 -E cluster.name="ESCookBook" -E node.master=true -E node.data=false -E discovery.zen.ping.unicast.hosts=192.168.0.5
 # Wait for master node up and running
 sleep 60
@@ -71,9 +71,9 @@ docker service create --network es_cluster --name es_data --constraint 'node.lab
 docker service create --network es_cluster --name es_ingest --constraint 'node.labels.type == es_ingest' --replicas=1 --env ES_JAVA_OPTS="-Xms1g -Xmx1g" elasticsearch/swarm:5.0.0 -E cluster.name="ESCookBook" -E node.master=false -E node.data=false -E node.ingest=true -E discovery.zen.ping.unicast.hosts=es_master
 
 echo ""
-echo "--------------------------------------------------------"
-echo "Running Portainer to manage Swarm cluster at oc5 node..."
-echo "--------------------------------------------------------"
+echo "-------------------------------------------------------------------"
+echo "Running Portainer to manage Swarm cluster at $SWARM_MANAGER node..."
+echo "-------------------------------------------------------------------"
 docker run -d --name portainer -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock
 
 docker service ls
