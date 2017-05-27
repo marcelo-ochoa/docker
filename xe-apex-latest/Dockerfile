@@ -1,7 +1,7 @@
 FROM	oracle/database:11.2.0.2-xe
 MAINTAINER mochoa@scotas.com
 
-ENV APEX_FILE=apex_5.1_en.zip
+ENV APEX_FILE=apex_5.1.1_en.zip
 
 COPY $APEX_FILE $INSTALL_DIR/
 
@@ -15,4 +15,4 @@ COPY 	runOracle.sh $ORACLE_BASE/
 VOLUME ["$ORACLE_BASE/oradata"]
 EXPOSE 1521 8080
 
-CMD $ORACLE_BASE/$RUN_FILE
+CMD exec $ORACLE_BASE/$RUN_FILE
