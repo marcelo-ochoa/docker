@@ -8,6 +8,5 @@ yum install --enablerepo=ol7_addons -y docker-engine nfs-utils
 yum update -y
 systemctl enable docker
 systemctl start docker
-usermod -G docker -a opc
 echo "vm.max_map_count=262144" >> /etc/sysctl.conf
-sysctl -p
+usermod -G docker -a opc
