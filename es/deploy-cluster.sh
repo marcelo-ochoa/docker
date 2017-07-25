@@ -44,7 +44,7 @@ docker run -d \
    --name viz \
    -p 8080:8080 \
    --net es_cluster \
-   -v /var/run/docker.sock:/var/run/docker.sock manomarks/visualizer:latest
+   -v /var/run/docker.sock:/var/run/docker.sock dockersamples/visualizer:latest
 
 echo ""
 echo "-----------------------------------------------------------------"
