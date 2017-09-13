@@ -4,5 +4,5 @@ su -p oracle -c "sqlplus / as sysdba <<EOF
 @apexins.sql SYSAUX SYSAUX TEMP /i/
 EOF"
 su -p oracle -c "sqlplus / as sysdba <<EOF
-@apex_epg_config.sql /install
+@apex_epg_config.sql $ORACLE_BASE/scripts/setup
 EOF"
