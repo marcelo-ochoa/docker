@@ -26,7 +26,7 @@ as a result of the docker build command you will get a fresh local image of 18c 
 
 latest Oracle scripts include a hook to provide extra functionality as post installation task, here an example of custom scripts(https://github.com/oracle/docker-images/tree/master/OracleDatabase/SingleInstance/samples/customscripts), so if we start a container as:
 
-    docker run --name xe-18c --hostname xe-18c \
+    docker run --name xe-18c --hostname xe-18c --shm-size=1g \
     -p 1521:1521 -p 5500:5500 -p 8080:8080 \
     -e ORACLE_PWD=<your database passwords> \
     -v [<host mount point>:]/opt/oracle/oradata \
