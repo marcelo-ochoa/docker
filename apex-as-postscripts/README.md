@@ -24,7 +24,7 @@ as a result of the docker build command you will get a fresh local image of 18c 
     [oracle@localhost dockerfiles]$ docker image ls|grep oracle
     oracle/database                                       18.4.0-xe                4a22e4af8263        4 days ago          8.57GB
 
-latest Oracle scripts include a hook to provide extra functionality as post installation task, here an example of custom scripts(https://github.com/oracle/docker-images/tree/master/OracleDatabase/samples/customscripts), so if we start a container as:
+latest Oracle scripts include a hook to provide extra functionality as post installation task, here an example of custom scripts(https://github.com/oracle/docker-images/tree/master/OracleDatabase/SingleInstance/samples/customscripts), so if we start a container as:
 
     docker run --name xe-18c --hostname xe-18c \
     -p 1521:1521 -p 5500:5500 -p 8080:8080 \
