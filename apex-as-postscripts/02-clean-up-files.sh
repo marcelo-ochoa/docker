@@ -1,2 +1,2 @@
 #!/bin/bash
-rm -rf $ORACLE_BASE/scripts/setup/apex
+rm -rf /tmp/apex
