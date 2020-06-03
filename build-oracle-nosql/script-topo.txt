@@ -1,6 +1,6 @@
 ### build script start
 ### reference https://www.sandisk.com/content/dam/sandisk-main/en_us/assets/resources/enterprise/white-papers/oracle-nosql-cluster-ycsb-testing-with-fusion-iomemory.pdf
-topology create -name MyStoreLayout -pool MyPool -partitions 100
+topology create -name MyStoreLayout -pool MyPool -partitions 10
 topology preview -name MyStoreLayout
 plan deploy-topology -name MyStoreLayout -wait
 show plans

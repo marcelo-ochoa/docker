@@ -1,25 +1,64 @@
-version: '2'
+version: '3.7'
+
+x-default-opts: 
+  &default-opts
+  logging:
+    options:
+      max-size: "1m" 
+  deploy:
+    mode: replicated
+    replicas: 1
+    restart_policy:
+      condition: any
+      max_attempts: 3
+      window: 120s
+  networks:
+    - mycorp
+    
 services:
-  master:
-    build: .
+  master-1:
+    <<: *default-opts
     image: oracle-nosql/net
-    domainname: mycorp.com
-    networks:
-     - mycorp.com
+    hostname: master-1
     ports:
-     - "5000:5000"
-     - "5001:5001"
+      - "5000:5000"
+      - "5001:5001"
     environment:
-     - NODE_TYPE=m
-  slave:
-    build: .
+      - NODE_TYPE=m
+      - MASTER_NODE=master-1
+    volumes:
+      - kvroot_m1:/kvroot
+      - data_m1:/data
+
+  slave-1:
+    <<: *default-opts
     image: oracle-nosql/net
-    domainname: mycorp.com
-    networks:
-     - mycorp.com
+    hostname: slave-1
     environment:
-     - NODE_TYPE=s
+      - NODE_TYPE=s
+      - MASTER_NODE=master-1
+    volumes:
+      - kvroot_s1:/kvroot
+      - data_s1:/data
+
+  slave-2:
+    <<: *default-opts
+    image: oracle-nosql/net
+    hostname: slave-2
+    environment:
+      - NODE_TYPE=s
+      - MASTER_NODE=master-1
+    volumes:
+      - kvroot_s2:/kvroot
+      - data_s2:/data
+
 networks:
-    mycorp.com:
-      external:
-        name: mycorp.com
+  mycorp:
+
+volumes: 
+  kvroot_m1:
+  kvroot_s1:
+  kvroot_s2:
+  data_m1:
+  data_s1:
+  data_s2:

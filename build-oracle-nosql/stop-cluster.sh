@@ -1,6 +1,6 @@
 #!/bin/bash
-export KVHOME `docker inspect --format='{{index .Config.Env 3}}' oracle-nosql/net`
-export KVROOT `docker inspect --format='{{index .Config.Env 7}}' oracle-nosql/net`
+export KVHOME `docker inspect --format='{{index .Config.Env 5}}' oracle-nosql/net`
+export KVROOT `docker inspect --format='{{index .Config.Env 10}}' oracle-nosql/net`
 echo stoping cluster using $KVHOME and $KVROOT
 
 docker stop master
