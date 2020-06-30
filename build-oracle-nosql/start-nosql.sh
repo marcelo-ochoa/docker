@@ -6,6 +6,19 @@ if [ -t $KVROOT ]; then
 	KVROOT="/kvroot"
 fi
 
+if [ -t $DATA ]; then
+	DATA="/data"
+fi
+
+# Build new location using hostname
+KVROOT=$KVROOT/$HOSTNAME
+DATA=$DATA/$HOSTNAME
+
+# Create dir if not exists
+mkdir -p $KVROOT
+mkdir -p $DATA
+
+# Hold storage node count
 icount=1
 
 stop_database() {
@@ -43,9 +56,9 @@ EOF
 }
 
 create_bootconfig() {
-	mkdir -p /data/1 /data/2 /data/3
-    [[ -n $NODE_TYPE ]] && [[ $NODE_TYPE = "m" ]] && java -jar $KVHOME/lib/kvstore.jar makebootconfig -root $KVROOT -port 5000 -admin 5001 -host "$HOSTNAME" -hahost "$HOSTNAME" -harange 5010,5020 -store-security none -capacity 3 -num_cpus 1 -memory_mb 1024 -storagedir /data/1 -storagedirsize 1_gb -storagedir /data/2 -storagedirsize 1_gb -storagedir /data/3 -storagedirsize 1_gb
-    [[ -n $NODE_TYPE ]] && [[ $NODE_TYPE = "s" ]] && java -jar $KVHOME/lib/kvstore.jar makebootconfig -root $KVROOT -port 5000 -host "$HOSTNAME" -hahost "$HOSTNAME" -harange 5010,5020 -store-security none -capacity 3 -num_cpus 1 -memory_mb 1024 -storagedir /data/1 -storagedirsize 1_gb -storagedir /data/2 -storagedirsize 1_gb -storagedir /data/3 -storagedirsize 1_gb
+	mkdir -p $DATA/1 $DATA/2 $DATA/3
+    [[ -n $NODE_TYPE ]] && [[ $NODE_TYPE = "m" ]] && java -jar $KVHOME/lib/kvstore.jar makebootconfig -root $KVROOT -port 5000 -admin 5001 -host "$HOSTNAME" -hahost "$HOSTNAME" -harange 5010,5020 -store-security none -capacity 3 -num_cpus 1 -memory_mb 1024 -storagedir $DATA/1 -storagedirsize 1_gb -storagedir $DATA/2 -storagedirsize 1_gb -storagedir $DATA/3 -storagedirsize 1_gb
+    [[ -n $NODE_TYPE ]] && [[ $NODE_TYPE = "s" ]] && java -jar $KVHOME/lib/kvstore.jar makebootconfig -root $KVROOT -port 5000 -host "$HOSTNAME" -hahost "$HOSTNAME" -harange 5010,5020 -store-security none -capacity 3 -num_cpus 1 -memory_mb 1024 -storagedir $DATA/1 -storagedirsize 1_gb -storagedir $DATA/2 -storagedirsize 1_gb -storagedir $DATA/3 -storagedirsize 1_gb
 }
 
 # Set SIGINT handler

@@ -14,7 +14,10 @@ x-default-opts:
       window: 120s
   networks:
     - mycorp
-    
+  volumes:
+    - kvroot:/kvroot
+    - data:/data
+
 services:
   master-1:
     <<: *default-opts
@@ -26,9 +29,6 @@ services:
     environment:
       - NODE_TYPE=m
       - MASTER_NODE=master-1
-    volumes:
-      - kvroot_m1:/kvroot
-      - data_m1:/data
 
   slave-1:
     <<: *default-opts
@@ -37,9 +37,6 @@ services:
     environment:
       - NODE_TYPE=s
       - MASTER_NODE=master-1
-    volumes:
-      - kvroot_s1:/kvroot
-      - data_s1:/data
 
   slave-2:
     <<: *default-opts
@@ -48,17 +45,20 @@ services:
     environment:
       - NODE_TYPE=s
       - MASTER_NODE=master-1
-    volumes:
-      - kvroot_s2:/kvroot
-      - data_s2:/data
 
 networks:
   mycorp:
 
 volumes: 
-  kvroot_m1:
-  kvroot_s1:
-  kvroot_s2:
-  data_m1:
-  data_s1:
-  data_s2:
+  data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "/home/data/nosql/data"
+  kvroot:
+    driver: local
+    driver_opts:
+      type: one
+      o: bind
+      device: "/home/data/nosql/kvroot"
